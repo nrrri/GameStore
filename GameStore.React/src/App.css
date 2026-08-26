@@ -1,0 +1,428 @@
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap");
+
+:root {
+  font-family: "VT323", monospace;
+  color: #f5e6c8;
+  background: #171717;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    #171717;
+
+  background-size: 20px 20px;
+}
+
+/* APP */
+
+.app {
+  min-height: 100vh;
+}
+
+/* HEADER */
+
+.header {
+  min-height: 100px;
+  padding: 20px 40px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  background: #202020;
+  border-bottom: 4px solid #f5e6c8;
+
+  box-shadow: 0 4px 0 #000;
+}
+
+.header h1 {
+  margin: 0;
+
+  font-family: "Press Start 2P", monospace;
+  font-size: 24px;
+
+  color: #991cff;
+  text-shadow: 3px 3px 0 #000;
+}
+
+.header p {
+  margin: 10px 0 0;
+
+  font-size: 18px;
+  color: #aaa;
+}
+
+.header-status {
+  font-size: 20px;
+  color: #7bdff2;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+
+  background: #7bdff2;
+
+  box-shadow: 2px 2px 0 #000;
+}
+
+/* MAIN */
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px;
+}
+
+/* PAGE TITLE */
+
+.page-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-bottom: 25px;
+}
+
+.page-title h2 {
+  margin: 0;
+  color: #ff9f1c;
+
+  font-family: "Press Start 2P", monospace;
+  font-size: 18px;
+}
+
+.page-title p {
+  margin: 10px 0 0;
+
+  color: #999;
+  font-size: 18px;
+}
+
+/* BUTTONS */
+
+.btn {
+  border: 3px solid #000;
+  padding: 12px 18px;
+
+  font-family: "Press Start 2P", monospace;
+  font-size: 11px;
+
+  cursor: pointer;
+
+  box-shadow: 4px 4px 0 #000;
+  transition: transform 0.05s;
+}
+
+.btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: none;
+}
+
+.btn-primary {
+  background: #ff9f1c;
+  color: #171717;
+}
+
+.btn-edit {
+  background: #7bdff2;
+  color: #171717;
+  padding: 8px 12px;
+}
+
+.btn-delete {
+  background: #ef476f;
+  color: white;
+  padding: 8px 12px;
+}
+
+/* TABLE */
+
+.table-panel {
+  background: #242424;
+  border: 4px solid #f5e6c8;
+
+  box-shadow: 8px 8px 0 #000;
+
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 850px;
+}
+
+thead {
+  background: #303030;
+}
+
+th {
+  padding: 18px 15px;
+
+  text-align: left;
+
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+
+  color: #ff9f1c;
+
+  border-bottom: 3px solid #f5e6c8;
+}
+
+td {
+  padding: 17px 15px;
+
+  font-size: 21px;
+
+  border-bottom: 2px solid #444;
+}
+
+tbody tr:hover {
+  background: #303030;
+}
+
+.id {
+  color: #888;
+}
+
+.game-name {
+  font-weight: bold;
+  color: #fff;
+}
+
+.genre {
+  display: inline-block;
+
+  padding: 4px 8px;
+
+  background: #383838;
+  border: 2px solid #666;
+
+  color: #7bdff2;
+}
+
+.price {
+  color: #ff9f1c;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* MODAL */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding: 20px;
+
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.modal {
+  width: 100%;
+  max-width: 600px;
+
+  background: #242424;
+
+  border: 4px solid #f5e6c8;
+
+  box-shadow: 10px 10px 0 #000;
+}
+
+.modal-header {
+  padding: 20px;
+
+  display: flex;
+  justify-content: space-between;
+
+  border-bottom: 3px solid #f5e6c8;
+}
+
+.modal-header h2 {
+  margin: 0;
+
+  font-family: "Press Start 2P", monospace;
+  font-size: 16px;
+
+  color: #ff9f1c;
+}
+
+.modal-header p {
+  margin: 10px 0 0;
+
+  font-size: 18px;
+  color: #999;
+}
+
+.close {
+  width: 40px;
+  height: 40px;
+
+  border: 3px solid #000;
+
+  background: #ef476f;
+  color: white;
+
+  font-family: "Press Start 2P", monospace;
+
+  cursor: pointer;
+
+  box-shadow: 3px 3px 0 #000;
+}
+
+/* FORM */
+
+form {
+  padding: 25px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+
+  color: #ff9f1c;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+
+  padding: 13px;
+
+  border: 3px solid #666;
+
+  outline: none;
+
+  background: #171717;
+  color: white;
+
+  font-family: "VT323", monospace;
+  font-size: 21px;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #7bdff2;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+
+  margin-top: 30px;
+}
+
+.btn-cancel {
+  background: #555;
+  color: white;
+}
+
+/* EMPTY / LOADING */
+
+.loading,
+.empty {
+  padding: 80px 20px;
+
+  text-align: center;
+
+  font-size: 24px;
+}
+
+.empty p {
+  margin-bottom: 30px;
+}
+
+/* MOBILE */
+
+@media (max-width: 700px) {
+  .header {
+    padding: 20px;
+    align-items: flex-start;
+    gap: 20px;
+    flex-direction: column;
+  }
+
+  .header h1 {
+    font-size: 18px;
+  }
+
+  .container {
+    padding: 20px;
+  }
+
+  .page-title {
+    align-items: flex-start;
+    gap: 20px;
+    flex-direction: column;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
+.delete-content {
+  padding: 30px 25px 10px;
+  text-align: center;
+}
+
+.delete-content p {
+  margin: 0 0 15px;
+  font-size: 20px;
+}
+
+.delete-content h3 {
+  margin: 20px 0;
+
+  font-family: "Press Start 2P", monospace;
+  font-size: 14px;
+
+  color: #ff9f1c;
+  line-height: 1.8;
+}
+
+.delete-content .warning {
+  color: #ef476f;
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+}
+
+.delete-modal .form-actions {
+  padding: 0 25px 25px;
+}
