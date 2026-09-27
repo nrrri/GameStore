@@ -1,0 +1,56 @@
+GET http://localhost:5098/materials
+
+###
+GET http://localhost:5098/materials/1
+
+###
+POST http://localhost:5098/materials
+Content-Type: application/json
+
+{
+    "name": "Glazed Porcelain Tile",
+    "categoryId": 2,
+    "manufacturer": "Porcelanosa",
+    "unit": "m²",
+    "unitCost": 48.50,
+    "width": 600,
+    "depth": 10,
+    "height": 600
+}
+
+###
+PUT http://localhost:5098/materials/1
+Content-Type: application/json
+
+{
+    "name": "Glazed Porcelain Tile (Matt)",
+    "categoryId": 2,
+    "manufacturer": "Porcelanosa",
+    "unit": "m²",
+    "unitCost": 52.00,
+    "width": 600,
+    "depth": 10,
+    "height": 600
+}
+
+###
+# Upload an example picture (replace the path with a real image file)
+POST http://localhost:5098/materials/1/image
+Content-Type: multipart/form-data; boundary=MaterialImage
+
+--MaterialImage
+Content-Disposition: form-data; name="image"; filename="tile.jpg"
+Content-Type: image/jpeg
+
+< ./tile.jpg
+--MaterialImage--
+
+###
+DELETE http://localhost:5098/materials/1/image
+
+###
+DELETE http://localhost:5098/materials/1
+
+
+###
+GET http://localhost:5098/categories

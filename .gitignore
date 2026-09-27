@@ -64,6 +64,9 @@ GeneratedFiles/
 # ASP.NET Core
 wwwroot/lib/
 
+# Uploaded material pictures
+MaterialCatalog.Api/uploads/
+
 # =========================
 # Secrets / Local config
 # =========================
@@ -83,14 +86,14 @@ secrets.json
 # React / Vite
 # =========================
 
-GameStore.React/node_modules/
-GameStore.React/dist/
-GameStore.React/.vite/
+MaterialCatalog.React/node_modules/
+MaterialCatalog.React/dist/
+MaterialCatalog.React/.vite/
 
 # React environment files
-GameStore.React/.env
-GameStore.React/.env.*
-!GameStore.React/.env.example
+MaterialCatalog.React/.env
+MaterialCatalog.React/.env.*
+!MaterialCatalog.React/.env.example
 
 # =========================
 # OS
