@@ -8,7 +8,7 @@ public class Material
     public int CategoryId { get; set; }
     public required string Manufacturer { get; set; }
 
-    // Unit of measure the cost and carbon figures refer to, e.g. "m²", "m³", "kg", "each"
+    // Unit of measure the cost refers to, e.g. "m²", "m", "sheet", "box", "each"
     public required string Unit { get; set; }
 
     // Optional nominal dimensions in millimetres

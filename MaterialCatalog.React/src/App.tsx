@@ -30,33 +30,196 @@ type MaterialForm = {
   height: string;
 };
 
+type UnitSystem = "metric" | "imperial";
+
 const API_URL = "/api";
 
-const UNITS = ["m²", "m³", "m", "kg", "t", "each"];
+// Units cladding and surface materials are priced in: area, linear metre/foot
+// (boards, trims), sheet or panel, box of tiles, or individual piece
+const UNITS: Record<UnitSystem, string[]> = {
+  metric: ["m²", "m", "sheet", "box", "each"],
+  imperial: ["ft²", "ft", "sheet", "box", "each"],
+};
+
+const UNIT_SYSTEMS = [
+  { value: "metric", label: "METRIC" },
+  { value: "imperial", label: "IMPERIAL" },
+] as const;
+
+const UNIT_SYSTEM_KEY = "unitSystem";
+
+// The API always stores metric. Imperial is converted for display and
+// converted back on save.
+const MM_PER_INCH = 25.4;
+
+// Priced units that have an imperial counterpart, with how many metric units
+// one imperial unit is. Counted units (sheet, box, each) need no conversion.
+const UNIT_CONVERSIONS = [
+  { metric: "m²", imperial: "ft²", factor: 0.09290304 },
+  { metric: "m", imperial: "ft", factor: 0.3048 },
+];
+
+const LENGTH_UNITS = {
+  metric: { symbol: "mm", name: "millimetres" },
+  imperial: { symbol: "in", name: "inches" },
+};
+
+// Must match the API's limit on dimensions, in millimetres
+const MAX_DIMENSION = 100000;
+
+const round = (value: number, places: number) => Number(value.toFixed(places));
+
+// Stored millimetres shown in the chosen system
+const displayLength = (mm: number, system: UnitSystem) =>
+  system === "imperial" ? round(mm / MM_PER_INCH, 2) : mm;
+
+// A length typed in the chosen system, converted to millimetres
+const storedLength = (value: number, system: UnitSystem) =>
+  system === "imperial" ? round(value * MM_PER_INCH, 2) : value;
+
+// Stored unit and cost shown in the chosen system, e.g. $48.50 / m² as $4.51 / ft²
+const displayPrice = (
+  material: Pick<Material, "unit" | "unitCost">,
+  system: UnitSystem
+) => {
+  const conversion = UNIT_CONVERSIONS.find(({ metric }) => metric === material.unit);
+
+  return system === "imperial" && conversion
+    ? { unit: conversion.imperial, unitCost: material.unitCost * conversion.factor }
+    : { unit: material.unit, unitCost: material.unitCost };
+};
+
+// An imperial unit and cost typed in the form, converted to what the API stores
+const storedPrice = (unit: string, unitCost: number) => {
+  const conversion = UNIT_CONVERSIONS.find(({ imperial }) => imperial === unit);
+
+  return conversion
+    ? { unit: conversion.metric, unitCost: round(unitCost / conversion.factor, 4) }
+    : { unit, unitCost };
+};
+
+// Local storage can be unavailable (private windows, blocked site data)
+const loadUnitSystem = (): UnitSystem => {
+  try {
+    return localStorage.getItem(UNIT_SYSTEM_KEY) === "imperial" ? "imperial" : "metric";
+  } catch {
+    return "metric";
+  }
+};
+
+const saveUnitSystem = (system: UnitSystem) => {
+  try {
+    localStorage.setItem(UNIT_SYSTEM_KEY, system);
+  } catch {
+    // The choice just won't be remembered
+  }
+};
 
 // Must match the limits enforced by the API
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
-// Size inputs, all optional and in millimetres
+// Size inputs, all optional and stored in millimetres
 const DIMENSIONS = [
   { name: "width", letter: "W", label: "Width" },
   { name: "depth", letter: "D", label: "Depth" },
   { name: "height", letter: "H", label: "Height" },
 ] as const;
 
-// "W600 × D10 × H600 mm", skipping any dimension that was left empty
-const formatSize = (material: Material) => {
-  const parts = DIMENSIONS.filter(({ name }) => material[name] !== null).map(
-    ({ name, letter }) => `${letter}${material[name]}`
-  );
+type DimensionName = (typeof DIMENSIONS)[number]["name"];
 
-  return parts.length > 0 ? `${parts.join(" × ")} mm` : null;
+// "W600 × D10 × H600 mm" (or inches), skipping any dimension that was left empty
+const formatSize = (material: Material, system: UnitSystem) => {
+  const parts = DIMENSIONS.flatMap(({ name, letter }) => {
+    const value = material[name];
+
+    return value === null ? [] : [`${letter}${displayLength(value, system)}`];
+  });
+
+  return parts.length > 0
+    ? `${parts.join(" × ")} ${LENGTH_UNITS[system].symbol}`
+    : null;
 };
 
 // Empty input means "not specified"
 const toOptionalNumber = (value: string) =>
   value.trim() === "" ? null : Number(value);
+
+// Form fields for an existing material, in the chosen system
+const toForm = (
+  material: Omit<Material, "id" | "imageUrl">,
+  system: UnitSystem
+): MaterialForm => {
+  const price = displayPrice(material, system);
+
+  const length = (mm: number | null) =>
+    mm === null ? "" : displayLength(mm, system).toString();
+
+  return {
+    name: material.name,
+    category: material.category,
+    manufacturer: material.manufacturer,
+    unit: price.unit,
+    unitCost: round(price.unitCost, 2).toString(),
+    width: length(material.width),
+    depth: length(material.depth),
+    height: length(material.height),
+  };
+};
+
+// Unit, cost and size from the form, in the metric values the API stores.
+// Fields left as they were opened keep their stored value, so editing a
+// material in imperial doesn't drift its other numbers through rounding.
+const toStoredValues = (
+  form: MaterialForm,
+  system: UnitSystem,
+  original: Material | null
+) => {
+  const opened = original && toForm(original, system);
+
+  const price =
+    original &&
+    opened &&
+    form.unit === opened.unit &&
+    form.unitCost === opened.unitCost
+      ? { unit: original.unit, unitCost: original.unitCost }
+      : storedPrice(form.unit, Number(form.unitCost));
+
+  const length = (name: DimensionName) => {
+    if (original && opened && form[name] === opened[name]) {
+      return original[name];
+    }
+
+    const value = toOptionalNumber(form[name]);
+    return value === null ? null : storedLength(value, system);
+  };
+
+  return {
+    unit: price.unit,
+    unitCost: price.unitCost,
+    width: length("width"),
+    depth: length("depth"),
+    height: length("height"),
+  };
+};
+
+// Re-express what has been typed in the form in another unit system
+const convertForm = (
+  form: MaterialForm,
+  from: UnitSystem,
+  to: UnitSystem,
+  original: Material | null
+): MaterialForm => {
+  const converted = toForm(
+    { ...form, ...toStoredValues(form, from, original) },
+    to
+  );
+
+  // A cost that hasn't been entered yet stays empty rather than becoming 0
+  return form.unitCost.trim() === ""
+    ? { ...converted, unitCost: "" }
+    : converted;
+};
 
 // Image URLs from the API are relative to the API, so route them through the proxy
 const imageSrc = (imageUrl: string) => `${API_URL}${imageUrl}`;
@@ -113,6 +276,8 @@ function App() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
+
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>(loadUnitSystem);
 
   const [loading, setLoading] = useState(true);
 
@@ -208,20 +373,19 @@ function App() {
 
   const openEditForm = (material: Material) => {
     setEditingMaterial(material);
-
-    setForm({
-      name: material.name,
-      category: material.category,
-      manufacturer: material.manufacturer,
-      unit: material.unit,
-      unitCost: material.unitCost.toString(),
-      width: material.width?.toString() ?? "",
-      depth: material.depth?.toString() ?? "",
-      height: material.height?.toString() ?? "",
-    });
-
+    setForm(toForm(material, unitSystem));
     resetImage(material.imageUrl);
     openForm();
+  };
+
+  // Switched from inside the form, so convert what has been typed so far.
+  // The choice also sets how the table shows sizes and prices.
+  const changeUnitSystem = (system: UnitSystem) => {
+    if (system === unitSystem) return;
+
+    setForm(convertForm(form, unitSystem, system, editingMaterial));
+    setUnitSystem(system);
+    saveUnitSystem(system);
   };
 
   const closeForm = () => {
@@ -298,11 +462,7 @@ function App() {
         name: form.name,
         categoryId: selectedCategory.id,
         manufacturer: form.manufacturer,
-        unit: form.unit,
-        unitCost: Number(form.unitCost),
-        width: toOptionalNumber(form.width),
-        depth: toOptionalNumber(form.depth),
-        height: toOptionalNumber(form.height),
+        ...toStoredValues(form, unitSystem, editingMaterial),
       };
 
       const response = await fetch(url, {
@@ -330,7 +490,7 @@ function App() {
           name: form.name,
           category: form.category,
           manufacturer: form.manufacturer,
-          unit: form.unit,
+          unit: payload.unit,
           unitCost: payload.unitCost,
           width: payload.width,
           depth: payload.depth,
@@ -498,64 +658,65 @@ function App() {
               </thead>
 
               <tbody>
-                {materials.map((material) => (
-                  <tr key={material.id}>
-                    <td className="id">#{material.id}</td>
+                {materials.map((material) => {
+                  const size = formatSize(material, unitSystem);
+                  const price = displayPrice(material, unitSystem);
 
-                    <td>
-                      {material.imageUrl ? (
-                        <img
-                          className="thumb"
-                          src={imageSrc(material.imageUrl)}
-                          alt={material.name}
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="thumb thumb-empty" aria-label="No image" />
-                      )}
-                    </td>
+                  return (
+                    <tr key={material.id}>
+                      <td className="id">#{material.id}</td>
 
-                    <td className="material-name">{material.name}</td>
+                      <td>
+                        {material.imageUrl ? (
+                          <img
+                            className="thumb"
+                            src={imageSrc(material.imageUrl)}
+                            alt={material.name}
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="thumb thumb-empty" aria-label="No image" />
+                        )}
+                      </td>
 
-                    <td>
-                      <span className="category">
-                        {material.category}
-                      </span>
-                    </td>
+                      <td className="material-name">{material.name}</td>
 
-                    <td>{material.manufacturer}</td>
+                      <td>
+                        <span className="category">
+                          {material.category}
+                        </span>
+                      </td>
 
-                    <td
-                      className={
-                        formatSize(material) ? "size" : "size empty-value"
-                      }
-                    >
-                      {formatSize(material) ?? "—"}
-                    </td>
+                      <td>{material.manufacturer}</td>
 
-                    <td className="price">
-                      ${material.unitCost.toFixed(2)} / {material.unit}
-                    </td>
+                      <td className={size ? "size" : "size empty-value"}>
+                        {size ?? "—"}
+                      </td>
 
-                    <td>
-                      <div className="actions">
-                        <button
-                          className="btn btn-edit"
-                          onClick={() => openEditForm(material)}
-                        >
-                          EDIT
-                        </button>
+                      <td className="price">
+                        ${price.unitCost.toFixed(2)} / {price.unit}
+                      </td>
 
-                        <button
-                          className="btn btn-delete"
-                          onClick={() => deleteMaterial(material)}
-                        >
-                          DELETE
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      <td>
+                        <div className="actions">
+                          <button
+                            className="btn btn-edit"
+                            onClick={() => openEditForm(material)}
+                          >
+                            EDIT
+                          </button>
+
+                          <button
+                            className="btn btn-delete"
+                            onClick={() => deleteMaterial(material)}
+                          >
+                            DELETE
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -638,6 +799,27 @@ function App() {
                 </div>
               </div>
 
+              <div className="form-group">
+                <label id="unit-system-label">UNIT SYSTEM</label>
+
+                <div
+                  className="unit-toggle"
+                  role="group"
+                  aria-labelledby="unit-system-label"
+                >
+                  {UNIT_SYSTEMS.map(({ value, label }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={unitSystem === value}
+                      onClick={() => changeUnitSystem(value)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="form-row">
                 <div className="form-group">
                   <label>UNIT</label>
@@ -648,13 +830,13 @@ function App() {
                     value={form.unit}
                     onChange={handleChange}
                     list="unit-options"
-                    placeholder="m², m³, kg..."
+                    placeholder={`${UNITS[unitSystem].slice(0, 3).join(", ")}...`}
                     maxLength={20}
                     required
                   />
 
                   <datalist id="unit-options">
-                    {UNITS.map((unit) => (
+                    {UNITS[unitSystem].map((unit) => (
                       <option key={unit} value={unit} />
                     ))}
                   </datalist>
@@ -678,7 +860,8 @@ function App() {
 
               <fieldset className="form-group size-group">
                 <legend>
-                  SIZE (mm) <span className="optional">OPTIONAL</span>
+                  SIZE ({LENGTH_UNITS[unitSystem].symbol}){" "}
+                  <span className="optional">OPTIONAL</span>
                 </legend>
 
                 <div className="size-inputs">
@@ -691,9 +874,9 @@ function App() {
                         name={name}
                         value={form[name]}
                         onChange={handleChange}
-                        aria-label={`${label} in millimetres`}
+                        aria-label={`${label} in ${LENGTH_UNITS[unitSystem].name}`}
                         min="0"
-                        max="100000"
+                        max={displayLength(MAX_DIMENSION, unitSystem)}
                         step="any"
                       />
                     </label>

@@ -241,6 +241,53 @@ body {
   color: var(--ink-dim);
 }
 
+/* Metric / imperial switch in the material form, as tall as the inputs */
+
+.unit-toggle {
+  display: flex;
+  border: 1px solid var(--ink-faint);
+}
+
+.unit-toggle button {
+  flex: 1;
+  height: 42px;
+  padding: 0 14px;
+
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-dim);
+
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 0.1em;
+
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.unit-toggle button + button {
+  border-left: 1px solid var(--ink-faint);
+}
+
+.unit-toggle button:hover {
+  background: var(--panel-hover);
+  color: var(--ink);
+}
+
+.unit-toggle button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper-deep);
+}
+
+.unit-toggle button:focus-visible {
+  outline: 2px solid var(--safety);
+  outline-offset: 3px;
+}
+
 /* BUTTONS */
 
 .btn {
